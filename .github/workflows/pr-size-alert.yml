@@ -7,39 +7,31 @@ on:
 jobs:
   check-pr-size:
     runs-on: ubuntu-latest
-    env:
-      # Set your line change threshold here
-      THRESHOLD: 500 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Calculate PR Size
-        id: pr-size
-        uses: ./.github/actions/pr-size-calculator
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_number: ${{ github.event.pull_request.number }}
-          threshold: ${{ env.THRESHOLD }}
+          python-version: '3.10'
 
+      - name: Check PR Size
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MAX_LINES: '500'
+          MAX_FILES: '10'
+        run: python scripts/check_pr_size.py
+        
       - name: Send Slack Alert
-        uses: ./.github/actions/pr-alert-on-slack
-        with:
-          exceeds_threshold: ${{ steps.pr-size.outputs.exceeds_threshold }}
-          total_changes: ${{ steps.pr-size.outputs.total_changes }}
-          pr_url: ${{ github.event.pull_request.html_url }}
-          pr_number: ${{ github.event.pull_request.number }}
-          actor: ${{ github.actor }}
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python scripts/send_slack.py
+        
       - name: Send Email Alert
-        uses: ./.github/actions/pr-alert-on-mail
-        with:
-          exceeds_threshold: ${{ steps.pr-size.outputs.exceeds_threshold }}
-          total_changes: ${{ steps.pr-size.outputs.total_changes }}
-          pr_url: ${{ github.event.pull_request.html_url }}
-          pr_number: ${{ github.event.pull_request.number }}
-          actor: ${{ github.actor }}
-          smtp_username: ${{ secrets.SMTP_USERNAME }}
-          smtp_password: ${{ secrets.SMTP_PASSWORD }}
-          alert_email_to: dev-team-alerts@yourcompany.com
+        env:
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          ALERT_EMAIL_TO: dev-team-alerts@yourcompany.com
+        run: python scripts/send_email.py
