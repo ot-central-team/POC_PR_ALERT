@@ -1,0 +1,37 @@
+name: Send Slack Alert
+description: 'Sends an alert via Slack if a PR is too large'
+
+inputs:
+  exceeds_threshold:
+    description: 'Boolean string indicating if the threshold was exceeded'
+    required: true
+  total_changes:
+    description: 'Total number of lines changed'
+    required: true
+  pr_url:
+    description: 'The HTML URL of the Pull Request'
+    required: true
+  pr_number:
+    description: 'The number of the Pull Request'
+    required: true
+  actor:
+    description: 'The user who opened the Pull Request'
+    required: true
+  slack_webhook_url:
+    description: 'Slack incoming webhook URL'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Send Slack Alert
+      if: ${{ inputs.exceeds_threshold == 'true' }}
+      uses: slackapi/slack-github-action@v1.26.0
+      with:
+        payload: |
+          {
+            "text": "🚨 *Large PR Alert*\nPull Request <${{ inputs.pr_url }}|#${{ inputs.pr_number }}> by ${{ inputs.actor }} is exceptionally large (${{ inputs.total_changes }} lines changed).\nPlease consider breaking it down to ease the review process."
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

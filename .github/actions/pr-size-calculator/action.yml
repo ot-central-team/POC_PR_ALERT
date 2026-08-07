@@ -1,0 +1,53 @@
+name: Calculate PR Size
+description: 'Calculates the size of a Pull Request (additions + deletions) and checks against a threshold'
+
+inputs:
+  github_token:
+    description: 'GitHub token with read access to PRs'
+    required: true
+  pr_number:
+    description: 'The number of the Pull Request'
+    required: true
+  threshold:
+    description: 'The maximum allowed lines of code change'
+    required: true
+    default: '500'
+
+outputs:
+  exceeds_threshold:
+    description: 'Boolean string ("true" or "false") indicating if the threshold was exceeded'
+    value: ${{ steps.pr-size.outputs.exceeds_threshold }}
+  total_changes:
+    description: 'The total number of lines changed'
+    value: ${{ steps.pr-size.outputs.total_changes }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Calculate PR Size
+      id: pr-size
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        PR_NUMBER: ${{ inputs.pr_number }}
+        THRESHOLD: ${{ inputs.threshold }}
+      run: |
+        # We use the GitHub CLI to fetch exact diff stats securely
+        PR_DATA=$(gh pr view $PR_NUMBER --json additions,deletions)
+        ADDITIONS=$(echo $PR_DATA | jq -r '.additions')
+        DELETIONS=$(echo $PR_DATA | jq -r '.deletions')
+        TOTAL_CHANGES=$((ADDITIONS + DELETIONS))
+        
+        echo "Lines added: $ADDITIONS"
+        echo "Lines deleted: $DELETIONS"
+        echo "Total changes: $TOTAL_CHANGES"
+        
+        if [ "$TOTAL_CHANGES" -gt "$THRESHOLD" ]; then
+          echo "exceeds_threshold=true" >> $GITHUB_OUTPUT
+          echo "PR size exceeds the threshold of $THRESHOLD!"
+        else
+          echo "exceeds_threshold=false" >> $GITHUB_OUTPUT
+          echo "PR size is within limits."
+        fi
+        
+        echo "total_changes=$TOTAL_CHANGES" >> $GITHUB_OUTPUT
