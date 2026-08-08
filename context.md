@@ -13,14 +13,14 @@ State is passed between steps using a generated JSON file named `alert_payload.j
 ### Components
 1. **`.github/workflows/pr-size-alert.yml`**
    - The execution wrapper for GitHub Actions. It sets up Python, passes required environment variables, and sequentially runs the Python scripts.
-2. **`scripts/check_pr_size.py`**
+2. **`.github/scripts/check_pr_size.py`**
    - Interacts with the GitHub API to fetch PR size data.
    - Compares data against thresholds (`MAX_LINES` default 500, `MAX_FILES` default 10).
    - If the PR is too large, it generates `alert_payload.json` containing the PR details and the reason for the alert.
-3. **`scripts/send_slack.py`**
+3. **`.github/scripts/send_slack.py`**
    - Checks for the existence of `alert_payload.json`.
    - If found, formats the data and sends a message using a Slack Incoming Webhook (`SLACK_WEBHOOK_URL`).
-4. **`scripts/send_email.py`**
+4. **`.github/scripts/send_email.py`**
    - Checks for the existence of `alert_payload.json`.
    - If found, formats an email and sends it via SMTP using credentials provided via environment variables.
 

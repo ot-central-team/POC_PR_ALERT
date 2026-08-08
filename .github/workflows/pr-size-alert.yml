@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Prerequisites
-        run: ./scripts/install_prereqs.sh
+        run: ./.github/scripts/install_prereqs.sh
 
       - name: Check PR Size
         env:
@@ -20,16 +20,16 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           MAX_LINES: '500'
           MAX_FILES: '10'
-        run: python scripts/check_pr_size.py
+        run: python .github/scripts/check_pr_size.py
         
       - name: Send Slack Alert
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: python scripts/send_slack.py
+        run: python .github/scripts/send_slack.py
         
       - name: Send Email Alert
         env:
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           ALERT_EMAIL_TO: dev-team-alerts@yourcompany.com
-        run: python scripts/send_email.py
+        run: python .github/scripts/send_email.py
