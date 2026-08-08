@@ -37,6 +37,8 @@ jobs:
       - name: Enforce PR Size (Fail Check)
         run: |
           if [ -f "alert_payload.json" ]; then
-            echo "🚨 Failing the GitHub Check because PR size thresholds were exceeded!"
+            REASON=$(python3 -c "import json; print(json.load(open('alert_payload.json'))['reasons'])")
+            echo "::error title=PR Size Limit Exceeded::${REASON}"
+            echo "🚨 Failing the GitHub Check because PR size thresholds were exceeded: ${REASON}"
             exit 1
           fi
