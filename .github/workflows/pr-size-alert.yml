@@ -33,3 +33,10 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           ALERT_EMAIL_TO: dev-team-alerts@yourcompany.com
         run: python .github/scripts/send_email.py
+
+      - name: Enforce PR Size (Fail Check)
+        run: |
+          if [ -f "alert_payload.json" ]; then
+            echo "🚨 Failing the GitHub Check because PR size thresholds were exceeded!"
+            exit 1
+          fi
