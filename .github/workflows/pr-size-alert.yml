@@ -19,7 +19,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           MAX_LINES: '500'
-          MAX_FILES: '10'
+          MAX_FILES: '2'
         run: python .github/scripts/check_pr_size.py
         
       - name: Send Slack Alert
