@@ -1,5 +1,7 @@
 # List directories or files here that should NOT count towards the PR size limits.
-# By default, .github/ is already ignored (which includes .github/scripts/).
+# By default, .github/ and scripts/ are already ignored.
 
-tests/
 docs/
+.gitignore
+context.md
+Readme.md
