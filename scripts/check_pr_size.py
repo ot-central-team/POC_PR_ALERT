@@ -1,7 +1,7 @@
 import os
 import sys
 import json
-import urllib.request
+import subprocess
 
 def get_env(name, default=None, required=False):
     val = os.environ.get(name, default)
@@ -13,34 +13,47 @@ def get_env(name, default=None, required=False):
 def main():
     repo = get_env("GITHUB_REPOSITORY", required=True)
     pr_number = get_env("PR_NUMBER", required=True)
-    token = get_env("GITHUB_TOKEN", required=True)
     
     max_lines = int(get_env("MAX_LINES", "500"))
     max_files = int(get_env("MAX_FILES", "10"))
     
-    url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    req = urllib.request.Request(url, headers=headers)
-    
     try:
-        with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            additions = data.get("additions", 0)
-            deletions = data.get("deletions", 0)
-            changed_files = data.get("changed_files", 0)
-            pr_url = data.get("html_url", "")
-            pr_author = data.get("user", {}).get("login", "Unknown")
+        cmd = ["gh", "pr", "view", pr_number, "--repo", repo, "--json", "url,author,files"]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data = json.loads(result.stdout)
+        pr_url = data.get("url", "")
+        pr_author = data.get("author", {}).get("login", "Unknown")
+        files_data = data.get("files", [])
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to fetch PR details using gh CLI: {e.stderr}")
+        sys.exit(1)
     except Exception as e:
-        print(f"Failed to fetch PR details: {e}")
+        print(f"Unexpected error: {e}")
         sys.exit(1)
         
-    total_lines = additions + deletions
+    ignore_prefixes = ["scripts/", ".github/"]
+    if os.path.exists(".prignorecheck"):
+        with open(".prignorecheck", "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    ignore_prefixes.append(line)
+                    
+    total_lines = 0
+    changed_files = 0
     
-    print(f"Lines changed: {total_lines} (Max: {max_lines})")
-    print(f"Files changed: {changed_files} (Max: {max_files})")
+    for file_obj in files_data:
+        filename = file_obj.get("path", "")
+        if any(filename.startswith(prefix) for prefix in ignore_prefixes):
+            continue
+            
+        additions = file_obj.get("additions", 0)
+        deletions = file_obj.get("deletions", 0)
+        total_lines += (additions + deletions)
+        changed_files += 1
+            
+    print(f"Filtered Lines changed: {total_lines} (Max: {max_lines})")
+    print(f"Filtered Files changed: {changed_files} (Max: {max_files})")
     
     if total_lines > max_lines or changed_files > max_files:
         print("🚨 PR exceeds size thresholds! Generating alert payload...")
