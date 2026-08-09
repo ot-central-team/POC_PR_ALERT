@@ -74,6 +74,14 @@ def main():
         with open("alert_payload.json", "w") as f:
             json.dump(payload, f)
         print("Wrote alert_payload.json for downstream notifier scripts.")
+        
+        # Post a highly visible comment directly to the PR timeline
+        try:
+            comment_body = f"🚨 **PR Size Alert:** This PR exceeds the maximum size thresholds.\n\n**Reason:** {payload['reasons']}\n\nPlease consider breaking this PR into smaller, more reviewable pieces."
+            subprocess.run(["gh", "pr", "comment", pr_number, "--repo", repo, "--body", comment_body], check=True)
+            print("Posted alert comment directly to the PR.")
+        except Exception as e:
+            print(f"Failed to post PR comment: {e}")
     else:
         print("✅ PR size is within limits.")
         # Ensure we delete any stale payload file just in case
